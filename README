@@ -46,3 +46,29 @@ You will need a RISC-V "newlib" tool chain from
 https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
 riscv64-softmmu.  Once they are installed, and in your shell
 search path, you can run "make qemu".
+
+LOTTERY SCHEDULING (FORK ADDITIONS)
+
+This fork introduces a simple lottery-based scheduler and a test program.
+
+- Overview: Each RUNNABLE process has a `tickets` count; the scheduler draws
+	a random winner proportionally to tickets on each scheduling round.
+- Syscall: `settickets(int n)` sets the current process's ticket count (returns 0 on success, -1 on error).
+- Kernel changes: see [kernel/proc.c](kernel/proc.c), [kernel/proc.h](kernel/proc.h),
+	[kernel/sysproc.c](kernel/sysproc.c), [kernel/syscall.c](kernel/syscall.c),
+	and [kernel/syscall.h](kernel/syscall.h).
+- User API: declaration in [user/user.h](user/user.h), stub generated via [user/usys.pl](user/usys.pl).
+- Test: [user/test_scheduler.c](user/test_scheduler.c) spins a process after setting tickets.
+
+Quick try:
+
+1. Build and boot xv6: `make qemu`
+2. In the xv6 shell, run multiple processes with different tickets, e.g.:
+	 - `test_scheduler 1`
+	 - `test_scheduler 10`
+	 - `test_scheduler 50`
+3. Use `^P` (Ctrl-P) to dump process state; you’ll see `tickets` and `turns` counters.
+
+Notes:
+- The initial `init` process starts with 1 ticket.
+- `settickets(n)` requires `n >= 1`.
